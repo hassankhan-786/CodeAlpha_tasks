@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify-Style Music Player</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+         :root {
+  --primary: #1db954;
+  --secondary: #1ed760;
+  --glass: rgba(255, 255, 255, 0.05);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --spacing: 24px;
+  --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes vinyl {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  background: linear-gradient(-45deg, #1a1a1a, #2d2d2d, #181818, #121212);
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: var(--text-primary);
+}
+
+.player-container {
+  background: linear-gradient(145deg, 
+    rgba(255, 255, 255, 0.05) 0%, 
+    rgba(255, 255, 255, 0.01) 100%);
+  width: min(420px, 90vw);
+  padding: var(--spacing);
+  border-radius: 24px;
+  backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 16px 40px -8px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.player-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, 
+    rgba(29, 185, 84, 0.15) 0%, 
+    transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.album-art {
+  position: relative;
+  border-radius: 16px;
+  margin-bottom: var(--spacing);
+  aspect-ratio: 1;
+  overflow: hidden;
+  transform: translateZ(0);
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.4);
+  animation: float 6s ease-in-out infinite;
+}
+
+.album-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, 
+    rgba(255, 255, 255, 0.05) 0%, 
+    rgba(255, 255, 255, 0.01) 100%);
+  mix-blend-mode: overlay;
+}
+
+.album-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: var(--transition);
+}
+
+.album-art.playing::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  animation: vinyl 3s linear infinite;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+}
+
+.song-info {
+  text-align: center;
+  margin-bottom: var(--spacing);
+}
+
+.song-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+  background: linear-gradient(45deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.artist {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.progress-container {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  margin: var(--spacing) 0;
+  cursor: pointer;
+  transition: height 0.2s ease;
+}
+
+.progress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  border-radius: 4px;
+  position: relative;
+  transition: width 0.1s linear;
+}
+
+.progress::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0;
+  transition: var(--transition);
+  box-shadow: 0 0 8px var(--primary);
+}
+
+.progress-container:hover .progress::after {
+  opacity: 1;
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: var(--spacing);
+}
+
+button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 12px;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transition: var(--transition);
+}
+
+button:hover {
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+button:hover::before {
+  opacity: 1;
+}
+
+/* Enhanced Play and Pause Buttons */
+.play-btn, .pause-btn {
+  font-size: 2rem;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  box-shadow: 
+    0 8px 24px rgba(29, 185, 84, 0.3),
+    0 0 0 2px rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.play-btn::before, .pause-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.play-btn:hover, .pause-btn:hover {
+  box-shadow: 
+    0 12px 32px rgba(29, 185, 84, 0.4),
+    0 0 0 3px rgba(255, 255, 255, 0.15);
+  transform: scale(1.05) translateY(-2px);
+}
+
+.play-btn:hover::before, .pause-btn:hover::before {
+  opacity: 1;
+}
+
+.play-btn:active, .pause-btn:active {
+  transform: scale(0.95);
+}
+
+.play-btn::after, .pause-btn::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: scale(0);
+  transition: var(--transition);
+}
+
+.play-btn:active::after, .pause-btn:active::after {
+  transform: scale(1);
+  opacity: 0;
+}
+
+/* Ripple effect for buttons */
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 600ms linear;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Pause button specific styles */
+.pause-btn {
+  background: linear-gradient(135deg, var(--secondary), var(--primary));
+}
+
+.pause-btn:hover {
+  box-shadow: 
+    0 12px 32px rgba(30, 215, 96, 0.4),
+    0 0 0 3px rgba(255, 255, 255, 0.15);
+}
+
+/* Icon adjustments */
+.play-btn i, .pause-btn i {
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .play-btn, .pause-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.75rem;
+  }
+}
+
+.volume-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: var(--spacing);
+}
+
+.volume-slider {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.volume-slider:hover::-webkit-slider-thumb {
+  background: var(--primary);
+  transform: scale(1.2);
+}
+
+.active-state {
+  color: var(--primary) !important;
+  text-shadow: 0 0 8px rgba(29, 185, 84, 0.4);
+}
+
+@media (max-width: 480px) {
+  :root {
+    --spacing: 16px;
+  }
+  
+  .player-container {
+    border-radius: 16px;
+  }
+  
+  .album-art {
+    border-radius: 12px;
+  }
+  
+  .play-btn {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Ripple effect */
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 600ms linear;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+    </style>
+</head>
+<body>
+    <div class="player-container">
+        <div class="album-art">
+            <img src="content://media/external/downloads/1000132336" alt="Album Art">
+        </div>
+        
+        <div class="song-info">
+            <div class="song-title">Song Title</div>
+            <div class="artist">Artist Name</div>
+        </div>
+
+        <div class="controls">
+            <div class="progress-container">
+                <div class="progress"></div>
+            </div>
+            
+            <div class="time-display">
+                <span class="current-time">0:00</span>
+                <span class="duration">0:00</span>
+            </div>
+
+            <div class="buttons">
+                <button class="shuffle-btn">⇄</button>
+                <button class="prev-btn">⏮</button>
+                <button class="play-btn">▶</button>
+                <button class="next-btn">⏭</button>
+                <button class="repeat-btn">↺</button>
+            </div>
+
+            <div class="volume-container">
+                <button class="volume-btn">🔊</button>
+                <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="1">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const songs = [
+            { title: "Russian Bandana", artist: "Dhanda Nyoliwala", src: "content://media/external/downloads/1000131979", cover: "content://media/external/downloads/1000132336" },
+            { title: "Husan Tera Toba Toba Offical Audio", artist: "Karan Aujla & Vicky Kaushal", src: "/storage/emulated/0/Download/y2mate.com - Husan Tera Toba Toba Official Video Karan Aujla  Tauba Tauba Vicky KaushalTripti New Song 2024.mp3", cover: "content://media/external/downloads/1000133405" },
+            { title: "Galliyan Offical Audio", artist: "Ankit Tiwari", src: "/storage/emulated/0/Download/y2mate.com - Galliyan slowed.mp3", cover: "content://media/external/downloads/1000133404" }
+        ];
+
+        const audio = new Audio();
+        const playBtn = document.querySelector('.play-btn');
+        const prevBtn = document.querySelector('.prev-btn');
+        const nextBtn = document.querySelector('.next-btn');
+        const shuffleBtn = document.querySelector('.shuffle-btn');
+        const repeatBtn = document.querySelector('.repeat-btn');
+        const progress = document.querySelector('.progress');
+        const progressContainer = document.querySelector('.progress-container');
+        const currentTimeEl = document.querySelector('.current-time');
+        const durationEl = document.querySelector('.duration');
+        const volumeSlider = document.querySelector('.volume-slider');
+        const songTitle = document.querySelector('.song-title');
+        const artist = document.querySelector('.artist');
+        const albumArt = document.querySelector('.album-art img');
+
+        let currentSongIndex = 0;
+        let isShuffle = false;
+        let isRepeat = false;
+
+        // Load song
+        function loadSong(song) {
+            songTitle.textContent = song.title;
+            artist.textContent = song.artist;
+            albumArt.src = song.cover;
+            audio.src = song.src;
+        }
+
+        // Play/Pause
+        function togglePlay() {
+            if (audio.paused) {
+                audio.play();
+                playBtn.textContent = '⏸';
+            } else {
+                audio.pause();
+                playBtn.textContent = '▶';
+            }
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const { duration, currentTime } = audio;
+            const progressPercent = (currentTime / duration) * 100;
+            progress.style.width = `${progressPercent}%`;
+            
+            // Update time display
+            currentTimeEl.textContent = formatTime(currentTime);
+            durationEl.textContent = formatTime(duration);
+        }
+
+        // Set progress
+        function setProgress(e) {
+            const width = this.clientWidth;
+            const clickX = e.offsetX;
+            const duration = audio.duration;
+            audio.currentTime = (clickX / width) * duration;
+        }
+
+        // Next song
+        function nextSong() {
+            if (isShuffle) {
+                currentSongIndex = Math.floor(Math.random() * songs.length);
+            } else {
+                currentSongIndex = (currentSongIndex + 1) % songs.length;
+            }
+            loadSong(songs[currentSongIndex]);
+            if (!audio.paused) audio.play();
+        }
+
+        // Previous song
+        function prevSong() {
+            currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+            loadSong(songs[currentSongIndex]);
+            if (!audio.paused) audio.play();
+        }
+
+        // Shuffle songs
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            shuffleBtn.classList.toggle('active', isShuffle);
+        }
+
+        // Repeat song
+        function toggleRepeat() {
+            isRepeat = !isRepeat;
+            repeatBtn.classList.toggle('active', isRepeat);
+            audio.loop = isRepeat;
+        }
+
+        // Volume control
+        function setVolume() {
+            audio.volume = volumeSlider.value;
+        }
+
+        // Time formatter
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            seconds = Math.floor(seconds % 60);
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Event listeners
+        playBtn.addEventListener('click', togglePlay);
+        prevBtn.addEventListener('click', prevSong);
+        nextBtn.addEventListener('click', nextSong);
+        shuffleBtn.addEventListener('click', toggleShuffle);
+        repeatBtn.addEventListener('click', toggleRepeat);
+        progressContainer.addEventListener('click', setProgress);
+        volumeSlider.addEventListener('input', setVolume);
+        audio.addEventListener('timeupdate', updateProgress);
+        audio.addEventListener('ended', () => {
+            if (!isRepeat) nextSong();
+        });
+
+        // Initialize
+        loadSong(songs[currentSongIndex]);
+    </script>
+</body>
+</html>
